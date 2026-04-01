@@ -1,31 +1,104 @@
 #!/bin/sh
 
-# رابط الملف المباشر من مستودعك
-URL="https://github.com/anow2008/cam-emu/raw/main/oscam/enigma2-plugin-softcams-oscam_11886-emu-r803_all.ipk"
-FILE_NAME="enigma2-plugin-softcams-oscam_11886.ipk"
+# =====================================================================================================================
+# SCRIPT : DOWNLOAD AND INSTALL OSCam EMU 11886
+# =====================================================================================================================
+# Command: wget -q "--no-check-certificate" https://raw.githubusercontent.com/anow2008/cam-emu/main/oscam/install_oscam11886.sh -O - | /bin/sh
+# =====================================================================================================================
 
-echo "-------------------------------------------------------"
-echo "جاري تحميل وتثبيت OSCam من مستودع anow2008..."
-echo "-------------------------------------------------------"
+########################################################################################################################
+# Plugin Settings
+########################################################################################################################
 
-# الانتقال للمجلد المؤقت
-cd /tmp
+PACKAGE_DIR='cam-emu/main/oscam'
+MY_IPK="enigma2-plugin-softcams-oscam_11886-emu-r803_all.ipk"
+# ملاحظة: إذا قمت برفع نسخة .deb للدريم بوكس لاحقاً ضع اسمها هنا
+MY_DEB="enigma2-plugin-softcams-oscam_11886-emu-r803_all.deb" 
 
-# تحميل الملف باستخدام wget مع تخطي فحص الشهادة لضمان العمل على الصور القديمة
-wget --no-check-certificate -O $FILE_NAME $URL
+########################################################################################################################
+# Auto Logic
+########################################################################################################################
 
-# التحقق من نجاح التحميل ثم البدء في التثبيت
-if [ -f $FILE_NAME ]; then
-    echo "تم التحميل بنجاح، جاري التثبيت الآن..."
-    opkg install $FILE_NAME
-    
-    # حذف الملف بعد التثبيت لتوفير مساحة
-    rm -f $FILE_NAME
-    echo "-------------------------------------------------------"
-    echo "تم التثبيت بنجاح! يرجى إعادة تشغيل الانجيما (GUI)."
-    echo "-------------------------------------------------------"
+MY_MAIN_URL="https://raw.githubusercontent.com/anow2008/"
+
+# تحديد نوع الحزمة بناءً على نظام الجهاز (IPK أو DEB)
+if which dpkg > /dev/null 2>&1; then
+    MY_FILE=$MY_DEB
+    MY_URL=$MY_MAIN_URL$PACKAGE_DIR'/'$MY_DEB
 else
-    echo "خطأ: فشل تحميل الملف، تأكد من اتصال الجهاز بالإنترنت."
+    MY_FILE=$MY_IPK
+    MY_URL=$MY_MAIN_URL$PACKAGE_DIR'/'$MY_IPK
 fi
 
-exit 0
+MY_TMP_FILE="/tmp/"$MY_FILE
+
+echo ''
+echo '************************************************************'
+echo '** STARTED OSCAM INSTALLATION              **'
+echo '************************************************************'
+echo "** Uploaded by: anow2008                     **"
+echo "** https://github.com/anow2008/cam-emu             **"
+echo "************************************************************"
+echo ''
+
+# حذف أي ملفات قديمة من المجلد المؤقت
+rm -f $MY_TMP_FILE > /dev/null 2>&1
+
+# تحميل الملف
+MY_SEP='============================================================='
+echo $MY_SEP
+echo "Downloading $MY_FILE ..."
+echo $MY_SEP
+echo ''
+
+wget --no-check-certificate -T 5 $MY_URL -P "/tmp/"
+
+# التحقق من نجاح التحميل
+if [ -f $MY_TMP_FILE ]; then
+    echo ''
+    echo $MY_SEP
+    echo 'Installation started'
+    echo $MY_SEP
+    echo ''
+    
+    # التثبيت بناءً على نوع الحزمة
+    if which dpkg > /dev/null 2>&1; then
+        dpkg -i --force-overwrite $MY_TMP_FILE
+    else
+        opkg install --force-reinstall $MY_TMP_FILE
+    fi
+    
+    MY_RESULT=$?
+
+    # التحقق من نتيجة التثبيت
+    echo ''
+    if [ $MY_RESULT -eq 0 ]; then
+        echo "    >>>>   SUCCESSFULLY INSTALLED   <<<<"
+        echo ''
+        echo "    >>>>       RESTARTING GUI       <<<<"
+        
+        # حذف الملف بعد التثبيت
+        rm -f $MY_TMP_FILE
+        
+        # إعادة تشغيل الإنجيما لتفعيل التغييرات
+        if which systemctl > /dev/null 2>&1; then
+            sleep 2; systemctl restart enigma2
+        else
+            init 4; sleep 4; init 3;
+        fi
+    else
+        echo "    >>>>   INSTALLATION FAILED !   <<<<"
+        rm -f $MY_TMP_FILE
+    fi
+    
+    echo ''
+    echo '**************************************************'
+    echo '** FINISHED                   **'
+    echo '**************************************************'
+    echo ''
+    exit 0
+else
+    echo ''
+    echo "Download failed! Please check your internet connection."
+    exit 1
+fi
