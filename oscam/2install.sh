@@ -1,5 +1,5 @@
 #!/bin/sh
-# MOHAMED_OS - Enigma2 GitHub Installer Script
+# anow2008 - Enigma2 GitHub Installer Script
 
 # --- روابط جيت هاب المباشرة (Raw Links) ---
 URL_TAR_GZ="https://raw.githubusercontent.com/anow2008/cam-emu/main/oscam/oscam.tar.gz"
